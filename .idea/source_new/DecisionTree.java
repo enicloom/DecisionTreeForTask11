@@ -80,6 +80,7 @@ public class DecisionTree {
             if (noLessThan.size() > 0) {
                 node.children.put("noLessThan", generateTreeHelper(noLessThan, chosen));
             }
+            node.finalResult = voting(trainSet);
         } else {
             Map<String, List<Map<String, String>>> mapSet = new HashMap<>();
             for (Map<String, String> data : trainSet) {
@@ -95,6 +96,7 @@ public class DecisionTree {
             for (String s : mapSet.keySet()) {
                 node.children.put(s, generateTreeHelper(mapSet.get(s), chosen));
             }
+            node.finalResult = voting(trainSet);
         }
 
         return node;
@@ -128,8 +130,6 @@ public class DecisionTree {
             trainset.addAll(wholeSet.subList(0, start - 1));
             trainset.addAll(wholeSet.subList(start + testSize, wholeSet.size()));
             start = start + testSize + 1;
-            System.out.println("the start now is " + start);
-            //start = wholeSet.size();
             TreeNode node = generateTreeHelper(trainset, chosen);
             List<String> results = determineTests(node, testSet);
             int correct = 0;
@@ -138,15 +138,30 @@ public class DecisionTree {
                     correct++;
                 }
             }
-            System.out.println("the correct one is " + correct);
-            System.out.println("the test size is " + testSet.size());
-//            for (int i = 0; i < results.size(); i++) {
-//                System.out.println("the label is " + numToAttr.get(Double.parseDouble(results.get(i))));
-//            }
             rate += (double) correct / (double) (testSet.size());
         }
 
         return rate / iterate;
+    }
+
+    public void makePrediction(String train, String test) {
+        FileIO newTestFile = new FileIO();
+
+        List<Map<String, String>> wholeSet = newTestFile.generateData(train);
+        List<Map<String, String>> testSet = newTestFile.generateData(test);
+        attrs = newTestFile.attrs;
+        attrState = newTestFile.attrState;
+        nonAttrSplit = newTestFile.nonAttrSplit;
+        numToAttr = newTestFile.numToAttr;
+        label = attrs.get(attrs.size() - 1);
+
+        Set<String> chosen = new HashSet<>();
+        TreeNode node = generateTreeHelper(wholeSet, chosen);
+        List<String> results = determineTests(node, testSet);
+
+        for (int i = 0; i < results.size(); i++) {
+            System.out.println("the decision for data " + (i + 1) + " is " + numToAttr.get(Double.parseDouble(results.get(i))));
+        }
     }
 
     public List<String> determineTests(TreeNode node, List<Map<String, String>> testSet) {
@@ -158,15 +173,20 @@ public class DecisionTree {
     }
 
     public String determine(TreeNode node, Map<String, String> data) {
-        if (node == null) System.out.println("I am a null node");
-        while (!node.isLeaf) {
+        while (node != null && !node.isLeaf) {
             if (node.value == -1) {
-                node = node.children.get(data.get(node.attr));
+                if (node.children.get(data.get(node.attr)) != null) {
+                    node = node.children.get(data.get(node.attr));
+                } else return node.finalResult;
             } else {
                 if (Double.parseDouble(data.get(node.attr)) < node.value) {
-                    node = node.children.get("lessThan");
+                    if (node.children.get("lessThan") != null) {
+                        node = node.children.get("lessThan");
+                    } else return node.finalResult;
                 } else if (Double.parseDouble(data.get(node.attr)) >= node.value) {
-                    node = node.children.get("noLessThan");
+                    if (node.children.get("noLessThan") != null) {
+                        node = node.children.get("noLessThan");
+                    } else return node.finalResult;
                 }
             }
         }

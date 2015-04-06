@@ -31,13 +31,15 @@ public class DTTest {
     }
 
     public static void main(String[] args) {
-        String s = "trainProdSelection.arff";
+        String train = "trainProdSelection.arff";
+//        String train = "trainProdIntro.binary.arff";
+        String test = "testProdSelection.arff";
+//        String test = "testProdIntro.binary.arff";
         DecisionTree dt = new DecisionTree();
-        Double cvr = dt.crossValidation(s);
+        Double cvr = dt.crossValidation(train);
         System.out.println("the cross validation rate is " + cvr);
-//        System.out.println("the first treenode is about " + root.attr);
-//        System.out.println("and I have " + root.children.size() + " children");
-//        printTree(root, 0);
+        dt.makePrediction(train, test);
+
     }
 
 }
